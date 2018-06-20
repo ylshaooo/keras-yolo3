@@ -33,13 +33,13 @@ def letterbox_image(image, size):
     return new_image
 
 
-def rand(a=0, b=1):
+def rand(a=0.0, b=1.0):
     return np.random.rand() * (b - a) + a
 
 
 def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jitter=.3, hue=.1, sat=1.5, val=1.5,
                     proc_img=True):
-    """random preprocessing for real-time data augmentation"""
+    """random preprocess for real-time data augmentation"""
     line = annotation_line.split()
     image = Image.open(line[0])
     iw, ih = image.size
@@ -91,7 +91,8 @@ def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jit
 
     # flip image or not
     flip = rand() < .5
-    if flip: image = image.transpose(Image.FLIP_LEFT_RIGHT)
+    if flip:
+        image = image.transpose(Image.FLIP_LEFT_RIGHT)
 
     # distort image
     hue = rand(-hue, hue)

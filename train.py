@@ -24,7 +24,7 @@ def _main():
 
     input_shape = (416, 416)  # multiple of 32, hw
 
-    is_tiny_version = len(anchors) == 6  # default setting
+    is_tiny_version = len(anchors) == 6
     if is_tiny_version:
         model = create_tiny_model(input_shape, anchors, num_classes,
                                   freeze_body=2, weights_path='model_data/tiny_yolo_weights.h5')
@@ -59,8 +59,8 @@ def _main():
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
                             steps_per_epoch=max(1, num_train // batch_size),
-                            validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors,
-                                                                   num_classes),
+                            validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape,
+                                                                   anchors, num_classes),
                             validation_steps=max(1, num_val // batch_size),
                             epochs=50,
                             initial_epoch=0,
@@ -115,8 +115,8 @@ def create_model(input_shape, anchors, num_classes, load_pretrained=True, freeze
     h, w = input_shape
     num_anchors = len(anchors)
 
-    y_true = [Input(shape=(h // {0: 32, 1: 16, 2: 8}[l], w // {0: 32, 1: 16, 2: 8}[l],
-                           num_anchors // 3, num_classes + 5)) for l in range(3)]
+    y_true = [Input(shape=(h // [32, 16, 8][l], w // [32, 16, 8][l], num_anchors // 3,
+                           num_classes + 5)) for l in range(3)]
 
     model_body = yolo_body(image_input, num_anchors // 3, num_classes)
     print('Create YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
@@ -127,7 +127,8 @@ def create_model(input_shape, anchors, num_classes, load_pretrained=True, freeze
         if freeze_body in [1, 2]:
             # Freeze darknet53 body or freeze all but 3 output layers.
             num = (185, len(model_body.layers) - 3)[freeze_body - 1]
-            for i in range(num): model_body.layers[i].trainable = False
+            for i in range(num):
+                model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
     model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
@@ -146,8 +147,8 @@ def create_tiny_model(input_shape, anchors, num_classes, load_pretrained=True, f
     h, w = input_shape
     num_anchors = len(anchors)
 
-    y_true = [Input(shape=(h // {0: 32, 1: 16}[l], w // {0: 32, 1: 16}[l],
-                           num_anchors // 2, num_classes + 5)) for l in range(2)]
+    y_true = [Input(shape=(h // [32, 16][l], w // [32, 16][l], num_anchors // 2,
+                           num_classes + 5)) for l in range(2)]
 
     model_body = tiny_yolo_body(image_input, num_anchors // 2, num_classes)
     print('Create Tiny YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
@@ -191,7 +192,8 @@ def data_generator(annotation_lines, batch_size, input_shape, anchors, num_class
 
 def data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes):
     n = len(annotation_lines)
-    if n == 0 or batch_size <= 0: return None
+    if n == 0 or batch_size <= 0:
+        return None
     return data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes)
 
 
