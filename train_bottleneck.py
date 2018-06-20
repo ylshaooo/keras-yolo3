@@ -1,15 +1,17 @@
 """
 Retrain the YOLO model for your own dataset.
+It will compute the bottleneck features of the frozen model first and then only trains the last layers.
 """
 import os
-import numpy as np
+
 import keras.backend as K
+from keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 from keras.layers import Input, Lambda
 from keras.models import Model
 from keras.optimizers import Adam
-from keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
+import numpy as np
 
-from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, yolo_loss
+from yolo3.model import preprocess_true_boxes, yolo_body, yolo_loss
 from yolo3.utils import get_random_data
 
 
@@ -24,10 +26,10 @@ def _main():
 
     input_shape = (416, 416)  # multiple of 32, hw
 
+    # make sure you know what you freeze
     model, bottleneck_model, last_layer_model = create_model(input_shape, anchors, num_classes,
                                                              freeze_body=2,
-                                                             weights_path='model_data/yolo_weights.h5')  # make sure you know what you freeze
-
+                                                             weights_path='model_data/yolo_weights.h5')
     logging = TensorBoard(log_dir=log_dir)
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
                                  monitor='val_loss', save_weights_only=True, save_best_only=True, period=3)

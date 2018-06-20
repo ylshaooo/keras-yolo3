@@ -89,8 +89,7 @@ def _main(args):
     prev_layer = input_layer
     all_layers = []
 
-    weight_decay = float(cfg_parser['net_0']['decay']
-                         ) if 'net_0' in cfg_parser.sections() else 5e-4
+    weight_decay = float(cfg_parser['net_0']['decay']) if 'net_0' in cfg_parser.sections() else 5e-4
     count = 0
     out_index = []
     for section in cfg_parser.sections():
@@ -114,20 +113,17 @@ def _main(args):
             darknet_w_shape = (filters, weights_shape[2], size, size)
             weights_size = np.product(weights_shape)
 
-            print('conv2d', 'bn'
-            if batch_normalize else '  ', activation, weights_shape)
+            print('conv2d', 'bn' if batch_normalize else '  ', activation, weights_shape)
 
-            conv_bias = np.ndarray(
-                shape=(filters,),
-                dtype='float32',
-                buffer=weights_file.read(filters * 4))
+            conv_bias = np.ndarray(shape=(filters,),
+                                   dtype='float32',
+                                   buffer=weights_file.read(filters * 4))
             count += filters
 
             if batch_normalize:
-                bn_weights = np.ndarray(
-                    shape=(3, filters),
-                    dtype='float32',
-                    buffer=weights_file.read(filters * 12))
+                bn_weights = np.ndarray(shape=(3, filters),
+                                        dtype='float32',
+                                        buffer=weights_file.read(filters * 12))
                 count += 3 * filters
 
                 bn_weight_list = [
@@ -137,10 +133,9 @@ def _main(args):
                     bn_weights[2]  # running var
                 ]
 
-            conv_weights = np.ndarray(
-                shape=darknet_w_shape,
-                dtype='float32',
-                buffer=weights_file.read(weights_size * 4))
+            conv_weights = np.ndarray(shape=darknet_w_shape,
+                                      dtype='float32',
+                                      buffer=weights_file.read(weights_size * 4))
             count += weights_size
 
             # DarkNet conv_weights are serialized Caffe-style:
@@ -148,9 +143,7 @@ def _main(args):
             # We would like to set these to Tensorflow order:
             # (height, width, in_dim, out_dim)
             conv_weights = np.transpose(conv_weights, [2, 3, 1, 0])
-            conv_weights = [conv_weights] if batch_normalize else [
-                conv_weights, conv_bias
-            ]
+            conv_weights = [conv_weights] if batch_normalize else [conv_weights, conv_bias]
 
             # Handle activation.
             act_fn = None
@@ -165,18 +158,16 @@ def _main(args):
             if stride > 1:
                 # Darknet uses left and top padding instead of 'same' mode
                 prev_layer = ZeroPadding2D(((1, 0), (1, 0)))(prev_layer)
-            conv_layer = (Conv2D(
-                filters, (size, size),
-                strides=(stride, stride),
-                kernel_regularizer=l2(weight_decay),
-                use_bias=not batch_normalize,
-                weights=conv_weights,
-                activation=act_fn,
-                padding=padding))(prev_layer)
+            conv_layer = Conv2D(filters, (size, size),
+                                strides=(stride, stride),
+                                kernel_regularizer=l2(weight_decay),
+                                use_bias=not batch_normalize,
+                                weights=conv_weights,
+                                activation=act_fn,
+                                padding=padding)(prev_layer)
 
             if batch_normalize:
-                conv_layer = (BatchNormalization(
-                    weights=bn_weight_list))(conv_layer)
+                conv_layer = BatchNormalization(weights=bn_weight_list)(conv_layer)
             prev_layer = conv_layer
 
             if activation == 'linear':
@@ -203,10 +194,10 @@ def _main(args):
             size = int(cfg_parser[section]['size'])
             stride = int(cfg_parser[section]['stride'])
             all_layers.append(
-                MaxPooling2D(
-                    pool_size=(size, size),
-                    strides=(stride, stride),
-                    padding='same')(prev_layer))
+                MaxPooling2D(pool_size=(size, size),
+                             strides=(stride, stride),
+                             padding='same')(prev_layer)
+            )
             prev_layer = all_layers[-1]
 
         elif section.startswith('shortcut'):
@@ -235,7 +226,8 @@ def _main(args):
                 'Unsupported section header type: {}'.format(section))
 
     # Create and save model.
-    if len(out_index) == 0: out_index.append(len(all_layers) - 1)
+    if len(out_index) == 0:
+        out_index.append(len(all_layers) - 1)
     model = Model(inputs=input_layer, outputs=[all_layers[i] for i in out_index])
     print(model.summary())
     if args.weights_only:
@@ -248,8 +240,7 @@ def _main(args):
     # Check to see if all weights have been read.
     remaining_weights = len(weights_file.read()) / 4
     weights_file.close()
-    print('Read {} of {} from Darknet weights.'.format(count, count +
-                                                       remaining_weights))
+    print('Read {} of {} from Darknet weights.'.format(count, count + remaining_weights))
     if remaining_weights > 0:
         print('Warning: {} unused weights'.format(remaining_weights))
 
